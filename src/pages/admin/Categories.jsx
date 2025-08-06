@@ -40,7 +40,7 @@ const AdminCategories = () => {
   const handleDelete = async (categoryId) => {
     if (window.confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
       try {
-        await adminAPI.delete(`/product-categories/${categoryId}`);
+        await adminAPI.deleteProductCategory(categoryId);
         toast.success('Category deleted successfully');
         fetchCategories();
       } catch (error) {
@@ -52,7 +52,7 @@ const AdminCategories = () => {
 
   const handleToggleStatus = async (categoryId, currentStatus) => {
     try {
-      await adminAPI.put(`/product-categories/${categoryId}`, {
+      await adminAPI.updateProductCategory(categoryId, {
         is_active: !currentStatus
       });
       toast.success('Category status updated successfully');

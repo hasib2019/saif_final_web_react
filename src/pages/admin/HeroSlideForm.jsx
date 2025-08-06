@@ -52,7 +52,7 @@ const HeroSlideForm = () => {
   const fetchSlide = async () => {
     setLoading(true);
     try {
-      const response = await adminAPI.get(`/hero-slides/${id}`);
+      const response = await adminAPI.getHeroSlide(id);
       setFormData(response.data.data);
     } catch (error) {
       console.error('Error fetching slide:', error);
@@ -96,10 +96,10 @@ const HeroSlideForm = () => {
 
     try {
       if (id) {
-        await adminAPI.put(`/hero-slides/${id}`, formData);
+        await adminAPI.updateHeroSlide(id, formData);
         toast.success('Hero slide updated successfully');
       } else {
-        await adminAPI.post('/hero-slides', formData);
+        await adminAPI.createHeroSlide(formData);
         toast.success('Hero slide created successfully');
       }
       navigate('/admin/hero-slides');

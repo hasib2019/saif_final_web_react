@@ -27,7 +27,7 @@ const AdminNews = () => {
 
   const fetchNews = async () => {
     try {
-      const response = await adminAPI.get('/press-releases');
+      const response = await adminAPI.getPressReleases();
       setNews(response.data.data || []);
     } catch (error) {
       console.error('Error fetching news:', error);
@@ -40,7 +40,7 @@ const AdminNews = () => {
   const handleDelete = async (newsId) => {
     if (window.confirm('Are you sure you want to delete this news article?')) {
       try {
-        await adminAPI.delete(`/press-releases/${newsId}`);
+        await adminAPI.deletePressRelease(newsId);
         toast.success('News article deleted successfully');
         fetchNews();
       } catch (error) {
@@ -52,7 +52,7 @@ const AdminNews = () => {
 
   const handleToggleStatus = async (newsId, currentStatus) => {
     try {
-      await adminAPI.put(`/press-releases/${newsId}`, {
+      await adminAPI.updatePressRelease(newsId, {
         is_active: !currentStatus
       });
       toast.success('News status updated successfully');

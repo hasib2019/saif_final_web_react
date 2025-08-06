@@ -10,6 +10,7 @@ import {
   Eye,
   Filter,
   MoreVertical,
+  Package,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -22,17 +23,45 @@ const AdminProducts = () => {
   const { getLocalized } = useLanguage();
 
   useEffect(() => {
+    console.log('AdminProducts component mounted');
     fetchProducts();
     fetchCategories();
+    
+    return () => {
+      console.log('AdminProducts component unmounted');
+    };
   }, []);
 
   const fetchProducts = async () => {
     try {
+      console.log('Fetching products...');
       const response = await adminAPI.getProducts();
-      setProducts(response.data.data || []);
+      console.log('Products response:', response);
+      
+      // Check if response has the expected structure
+      if (response && response.data) {
+        console.log('Response data:', response.data);
+        
+        if (Array.isArray(response.data.data)) {
+          console.log('Setting products array:', response.data.data);
+          setProducts(response.data.data);
+        } else if (response.data.data) {
+          console.log('Data is not an array, but exists:', response.data.data);
+          setProducts([response.data.data]);
+        } else {
+          console.error('No data array in response:', response.data);
+          setProducts([]);
+          toast.error('No products data received from API');
+        }
+      } else {
+        console.error('Invalid response format:', response);
+        setProducts([]);
+        toast.error('Invalid response format from API');
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
-      toast.error('Failed to fetch products');
+      setProducts([]);
+      toast.error('Failed to fetch products: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -40,10 +69,17 @@ const AdminProducts = () => {
 
   const fetchCategories = async () => {
     try {
+      console.log('Fetching categories...');
       const response = await adminAPI.getProductCategories();
-      setCategories(response.data.data || []);
+      console.log('Categories response:', response);
+      if (response.data && response.data.data) {
+        setCategories(response.data.data || []);
+      } else {
+        console.error('Invalid categories response format:', response);
+      }
     } catch (error) {
       console.error('Error fetching categories:', error);
+      toast.error('Failed to fetch categories: ' + (error.message || 'Unknown error'));
     }
   };
 
@@ -60,12 +96,13 @@ const AdminProducts = () => {
     }
   };
 
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = products && products.filter ? products.filter(product => {
+    if (!product) return false;
     const matchesSearch = getLocalized(product.name)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         getLocalized(product.short_description)?.toLowerCase().includes(searchTerm.toLowerCase());
+                       getLocalized(product.description)?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || product.category_id === parseInt(selectedCategory);
     return matchesSearch && matchesCategory;
-  });
+  }) : [];
 
   if (loading) {
     return (
@@ -74,6 +111,8 @@ const AdminProducts = () => {
       </div>
     );
   }
+
+  console.log('Rendering AdminProducts component', { products, filteredProducts, categories });
 
   return (
     <div className="space-y-6">
@@ -183,16 +222,16 @@ const AdminProducts = () => {
                   </td>
                 </tr>
               ) : (
-                filteredProducts.map((product) => (
+                filteredProducts.map((product) => product && (
                   <tr key={product.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-12 w-12">
-                          {product.featured_image ? (
+                          {product.images && product.images.length > 0 ? (
                             <img
                               className="h-12 w-12 rounded-lg object-cover"
-                              src={product.featured_image}
-                              alt={getLocalized(product.name)}
+                              src={product.images[0]}
+                              alt={getLocalized(product.name) || 'Product'}
                             />
                           ) : (
                             <div className="h-12 w-12 rounded-lg bg-gray-200 flex items-center justify-center">
@@ -202,10 +241,10 @@ const AdminProducts = () => {
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">
-                            {getLocalized(product.name)}
+                            {getLocalized(product.name) || 'Unnamed Product'}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {getLocalized(product.short_description)?.substring(0, 50)}...
+                            {(getLocalized(product.description) || '').substring(0, 50)}...
                           </div>
                         </div>
                       </div>
@@ -214,16 +253,14 @@ const AdminProducts = () => {
                       {product.category ? getLocalized(product.category.name) : 'No Category'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        product.is_active 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                         {product.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(product.created_at).toLocaleDateString()}
+                      {product.created_at && new Date(product.created_at) > new Date() ? 
+                        'Future date' : 
+                        product.created_at ? new Date(product.created_at).toLocaleDateString() : 'No date'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">

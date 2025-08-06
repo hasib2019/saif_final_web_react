@@ -29,6 +29,8 @@ import AdminUsers from './pages/admin/Users';
 import AdminLanguages from './pages/admin/Languages';
 import AdminSettings from './pages/admin/Settings';
 import AdminHeroSlideForm from './pages/admin/HeroSlideForm';
+import CategoryForm from './pages/admin/CategoryForm';
+import ProductForm from './pages/admin/ProductForm';
 
 function App() {
   return (
@@ -53,9 +55,39 @@ function App() {
                     <AdminProducts />
                   </ProtectedRoute>
                 } />
+                <Route path="products/create" element={
+                  <ProtectedRoute requiredPermission="manage-products">
+                    <ProductForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="products/:id/edit" element={
+                  <ProtectedRoute requiredPermission="manage-products">
+                    <ProductForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="products/:id" element={
+                  <ProtectedRoute requiredPermission="manage-products">
+                    <ProductForm readOnly={true} />
+                  </ProtectedRoute>
+                } />
                 <Route path="categories" element={
                   <ProtectedRoute requiredPermission="manage-categories">
                     <AdminCategories />
+                  </ProtectedRoute>
+                } />
+                <Route path="categories/create" element={
+                  <ProtectedRoute requiredPermission="manage-categories">
+                    <CategoryForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="categories/:id/edit" element={
+                  <ProtectedRoute requiredPermission="manage-categories">
+                    <CategoryForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="categories/:id" element={
+                  <ProtectedRoute requiredPermission="manage-categories">
+                    <CategoryForm readOnly={true} />
                   </ProtectedRoute>
                 } />
                 <Route path="news" element={

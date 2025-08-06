@@ -76,20 +76,55 @@ export const adminAPI = {
   getRoles: () => api.get('/users/roles'),
 
   // Company Info
+  getCompanyInfo: () => api.get('/admin/company-info'),
   updateCompanyInfo: (data) => api.put('/admin/company-info', data),
+
+  // About
+  getAbout: () => api.get('/admin/about'),
+  updateAbout: (data) => api.put('/admin/about', data),
+  getAboutTeam: () => api.get('/admin/about/team'),
+  getAboutTimeline: () => api.get('/admin/about/timeline'),
 
   // Products
   getProducts: (params) => api.get('/admin/products', { params }),
-  createProduct: (data) => api.post('/admin/products', data),
+  createProduct: (data) => {
+    const config = data instanceof FormData ? {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    } : {};
+    return api.post('/admin/products', data, config);
+  },
   getProduct: (id) => api.get(`/admin/products/${id}`),
-  updateProduct: (id, data) => api.put(`/admin/products/${id}`, data),
+  updateProduct: (id, data) => {
+    const config = data instanceof FormData ? {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    } : {};
+    return api.put(`/admin/products/${id}`, data, config);
+  },
   deleteProduct: (id) => api.delete(`/admin/products/${id}`),
 
   // Product Categories
   getProductCategories: (params) => api.get('/admin/product-categories', { params }),
-  createProductCategory: (data) => api.post('/admin/product-categories', data),
+  createProductCategory: (data) => {
+    const config = data instanceof FormData ? {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    } : {};
+    return api.post('/admin/product-categories', data, config);
+  },
   getProductCategory: (id) => api.get(`/admin/product-categories/${id}`),
-  updateProductCategory: (id, data) => api.put(`/admin/product-categories/${id}`, data),
+  updateProductCategory: (id, data) => {
+    const config = data instanceof FormData ? {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    } : {};
+    return api.put(`/admin/product-categories/${id}`, data, config);
+  },
   deleteProductCategory: (id) => api.delete(`/admin/product-categories/${id}`),
 
   // Press Releases
@@ -98,6 +133,13 @@ export const adminAPI = {
   getPressRelease: (id) => api.get(`/admin/press-releases/${id}`),
   updatePressRelease: (id, data) => api.put(`/admin/press-releases/${id}`, data),
   deletePressRelease: (id) => api.delete(`/admin/press-releases/${id}`),
+
+  // Hero Slides
+  getHeroSlides: (params) => api.get('/admin/hero-slides', { params }),
+  createHeroSlide: (data) => api.post('/admin/hero-slides', data),
+  getHeroSlide: (id) => api.get(`/admin/hero-slides/${id}`),
+  updateHeroSlide: (id, data) => api.put(`/admin/hero-slides/${id}`, data),
+  deleteHeroSlide: (id) => api.delete(`/admin/hero-slides/${id}`),
 
   // Partners
   getPartners: (params) => api.get('/admin/partners', { params }),

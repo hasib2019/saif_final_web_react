@@ -26,7 +26,7 @@ const AdminHeroSlides = () => {
 
   const fetchSlides = async () => {
     try {
-      const response = await adminAPI.get('/hero-slides');
+      const response = await adminAPI.getHeroSlides();
       setSlides(response.data.data || []);
     } catch (error) {
       console.error('Error fetching hero slides:', error);
@@ -39,7 +39,7 @@ const AdminHeroSlides = () => {
   const handleDelete = async (slideId) => {
     if (window.confirm('Are you sure you want to delete this slide?')) {
       try {
-        await adminAPI.delete(`/hero-slides/${slideId}`);
+        await adminAPI.deleteHeroSlide(slideId);
         toast.success('Slide deleted successfully');
         fetchSlides();
       } catch (error) {
@@ -51,7 +51,7 @@ const AdminHeroSlides = () => {
 
   const handleToggleStatus = async (slideId, currentStatus) => {
     try {
-      await adminAPI.put(`/hero-slides/${slideId}`, {
+      await adminAPI.updateHeroSlide(slideId, {
         is_active: !currentStatus
       });
       toast.success('Slide status updated successfully');

@@ -31,7 +31,7 @@ const AdminAbout = () => {
 
   const fetchAboutData = async () => {
     try {
-      const response = await adminAPI.get('/company-info');
+      const response = await adminAPI.getCompanyInfo();
       if (response.data.data) {
         setAboutData(response.data.data);
       }
@@ -46,7 +46,7 @@ const AdminAbout = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await adminAPI.put('/company-info', aboutData);
+      await adminAPI.updateCompanyInfo(aboutData);
       toast.success('About content updated successfully');
     } catch (error) {
       console.error('Error saving about data:', error);
