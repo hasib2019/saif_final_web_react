@@ -71,9 +71,11 @@ const HeroSlideForm = () => {
   };
 
   const handleFileUpload = async (field, file) => {
+    if (!file) return;
+    
     const formDataUpload = new FormData();
     formDataUpload.append('file', file);
-    formDataUpload.append('type', field);
+    formDataUpload.append('type', 'image');
 
     try {
       const response = await adminAPI.post('/upload', formDataUpload, {
@@ -95,17 +97,24 @@ const HeroSlideForm = () => {
     setSaving(true);
 
     try {
+      // Create a copy of the form data to send to the API
+      const dataToSubmit = { ...formData };
+      
       if (id) {
-        await adminAPI.updateHeroSlide(id, formData);
+        await adminAPI.updateHeroSlide(id, dataToSubmit);
         toast.success('Hero slide updated successfully');
       } else {
-        await adminAPI.createHeroSlide(formData);
+        await adminAPI.createHeroSlide(dataToSubmit);
         toast.success('Hero slide created successfully');
       }
       navigate('/admin/hero-slides');
     } catch (error) {
       console.error('Error saving slide:', error);
-      toast.error('Failed to save slide');
+      if (error.response && error.response.data && error.response.data.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Failed to save slide');
+      }
     } finally {
       setSaving(false);
     }
@@ -318,8 +327,9 @@ const HeroSlideForm = () => {
                           accept="image/*"
                           className="hidden"
                           onChange={(e) => {
-                            if (e.target.files[0]) {
-                              handleFileUpload('image', e.target.files[0]);
+                            const file = e.target.files[0];
+                            if (file) {
+                              handleFileUpload('image', file);
                             }
                           }}
                         />
@@ -343,8 +353,9 @@ const HeroSlideForm = () => {
                           accept="image/*"
                           className="hidden"
                           onChange={(e) => {
-                            if (e.target.files[0]) {
-                              handleFileUpload('background_image', e.target.files[0]);
+                            const file = e.target.files[0];
+                            if (file) {
+                              handleFileUpload('background_image', file);
                             }
                           }}
                         />

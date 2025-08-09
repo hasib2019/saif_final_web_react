@@ -42,7 +42,11 @@ const AdminProducts = () => {
       if (response && response.data) {
         console.log('Response data:', response.data);
         
-        if (Array.isArray(response.data.data)) {
+        // Handle paginated response structure
+        if (response.data.data && Array.isArray(response.data.data.data)) {
+          console.log('Setting products from paginated data:', response.data.data.data);
+          setProducts(response.data.data.data);
+        } else if (Array.isArray(response.data.data)) {
           console.log('Setting products array:', response.data.data);
           setProducts(response.data.data);
         } else if (response.data.data) {
@@ -227,10 +231,10 @@ const AdminProducts = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-12 w-12">
-                          {product.images && product.images.length > 0 ? (
+                          {Array.isArray(product.images) && product.images.length > 0 ? (
                             <img
                               className="h-12 w-12 rounded-lg object-cover"
-                              src={product.images[0]}
+                              src={`http://127.0.0.1:8000/storage/${product.images[0]}`}
                               alt={getLocalized(product.name) || 'Product'}
                             />
                           ) : (

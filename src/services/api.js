@@ -68,12 +68,13 @@ export const publicAPI = {
 // Admin API
 export const adminAPI = {
   // Users
-  getUsers: (params) => api.get('/users', { params }),
-  createUser: (data) => api.post('/users', data),
-  getUser: (id) => api.get(`/users/${id}`),
-  updateUser: (id, data) => api.put(`/users/${id}`, data),
-  deleteUser: (id) => api.delete(`/users/${id}`),
-  getRoles: () => api.get('/users/roles'),
+  getUsers: (params) => api.get('/admin/users', { params }),
+  createUser: (data) => api.post('/admin/users', data),
+  getUser: (id) => api.get(`/admin/users/${id}`),
+  updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
+  resetUserPassword: (id, data) => api.post(`/admin/users/${id}/reset-password`, data),
+  getRoles: () => api.get('/admin/users/roles'),
 
   // Company Info
   getCompanyInfo: () => api.get('/admin/company-info'),

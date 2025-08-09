@@ -31,6 +31,8 @@ import AdminSettings from './pages/admin/Settings';
 import AdminHeroSlideForm from './pages/admin/HeroSlideForm';
 import CategoryForm from './pages/admin/CategoryForm';
 import ProductForm from './pages/admin/ProductForm';
+import UserForm from './pages/admin/UserForm';
+import NewsForm from './pages/admin/NewsForm';
 
 function App() {
   return (
@@ -95,9 +97,44 @@ function App() {
                     <AdminNews />
                   </ProtectedRoute>
                 } />
+                <Route path="news/create" element={
+                  <ProtectedRoute requiredPermission="manage-press-releases">
+                    <NewsForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="news/:id/edit" element={
+                  <ProtectedRoute requiredPermission="manage-press-releases">
+                    <NewsForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="news/:id" element={
+                  <ProtectedRoute requiredPermission="manage-press-releases">
+                    <NewsForm readOnly={true} />
+                  </ProtectedRoute>
+                } />
                 <Route path="about" element={
                   <ProtectedRoute requiredPermission="manage-company-info">
                     <AdminAbout />
+                  </ProtectedRoute>
+                } />
+                <Route path="hero-slides" element={
+                  <ProtectedRoute requiredPermission="manage-content">
+                    <AdminHeroSlides />
+                  </ProtectedRoute>
+                } />
+                <Route path="hero-slides/create" element={
+                  <ProtectedRoute requiredPermission="manage-content">
+                    <AdminHeroSlideForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="hero-slides/:id/edit" element={
+                  <ProtectedRoute requiredPermission="manage-content">
+                    <AdminHeroSlideForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="hero-slides/:id" element={
+                  <ProtectedRoute requiredPermission="manage-content">
+                    <AdminHeroSlideForm readOnly={true} />
                   </ProtectedRoute>
                 } />
                 <Route path="partners" element={
@@ -113,6 +150,26 @@ function App() {
                 <Route path="users" element={
                   <ProtectedRoute requiredPermission="manage-users">
                     <AdminUsers />
+                  </ProtectedRoute>
+                } />
+                <Route path="users/create" element={
+                  <ProtectedRoute requiredPermission="manage-users">
+                    <UserForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="users/:id/edit" element={
+                  <ProtectedRoute requiredPermission="manage-users">
+                    <UserForm />
+                  </ProtectedRoute>
+                } />
+                <Route path="users/:id" element={
+                  <ProtectedRoute requiredPermission="manage-users">
+                    <UserForm readOnly={true} />
+                  </ProtectedRoute>
+                } />
+                <Route path="account-create" element={
+                  <ProtectedRoute requiredPermission="manage-users">
+                    <UserForm />
                   </ProtectedRoute>
                 } />
                 <Route path="languages" element={

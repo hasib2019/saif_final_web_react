@@ -36,7 +36,12 @@ const ProductForm = ({ readOnly = false }) => {
     try {
       const response = await adminAPI.getProduct(id);
       if (response.data && response.data.data) {
-        setFormData(response.data.data);
+        // Ensure images is always an array
+        const productData = response.data.data;
+        if (!productData.images) {
+          productData.images = [];
+        }
+        setFormData(productData);
       } else {
         toast.error('Failed to load product data');
       }
@@ -95,7 +100,7 @@ const ProductForm = ({ readOnly = false }) => {
       
       setFormData(prev => ({
         ...prev,
-        images: [...prev.images, ...imageFiles]
+        images: Array.isArray(prev.images) ? [...prev.images, ...imageFiles] : [...imageFiles]
       }));
       
       toast.success('Images added for upload');
@@ -107,7 +112,9 @@ const ProductForm = ({ readOnly = false }) => {
 
   const removeImage = (index) => {
     setFormData(prev => {
-      const newImages = [...prev.images];
+      // Ensure images is an array
+      const currentImages = Array.isArray(prev.images) ? prev.images : [];
+      const newImages = [...currentImages];
       // If the image has a preview URL, revoke it to prevent memory leaks
       if (newImages[index]?.preview && typeof newImages[index].preview === 'string') {
         URL.revokeObjectURL(newImages[index].preview);
@@ -342,10 +349,10 @@ const ProductForm = ({ readOnly = false }) => {
             Product Images
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2">
-            {formData.images && formData.images.map((image, index) => (
+            {Array.isArray(formData.images) && formData.images.map((image, index) => (
               <div key={index} className="relative group">
                 <img
-                  src={typeof image === 'string' ? image : image.preview}
+                  src={typeof image === 'string' ? `http://127.0.0.1:8000/storage/${image}` : image.preview}
                   alt={`Product image ${index + 1}`}
                   className="h-32 w-full object-cover rounded-lg"
                 />

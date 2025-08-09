@@ -25,6 +25,7 @@ import toast from 'react-hot-toast';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -34,11 +35,58 @@ const AdminUsers = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
+  
+  // Update filteredUsers when filters or search term changes
+  useEffect(() => {
+    if (Array.isArray(users)) {
+      const filtered = getFilteredUsers();
+      console.log('Filtered users:', filtered);
+      setFilteredUsers(filtered);
+    } else {
+      console.log('Users is not an array, setting filteredUsers to empty array');
+      setFilteredUsers([]);
+    }
+  }, [users, searchTerm, roleFilter, statusFilter]);
 
   const fetchUsers = async () => {
     try {
-      const response = await adminAPI.get('/users');
-      setUsers(response.data.data || []);
+      const response = await adminAPI.getUsers();
+      console.log('Raw API response:', response);
+      
+      // Check if response.data exists and has a data property
+      if (response && response.data && response.data.success && response.data.data && response.data.data.data) {
+        console.log('Users data type:', typeof response.data.data.data);
+        console.log('Is users array?', Array.isArray(response.data.data.data));
+        
+        // Process users data to include role information
+        if (Array.isArray(response.data.data.data)) {
+          // Map the users to include role information in a format the component expects
+          const userData = response.data.data.data.map(user => {
+            // Extract the first role name or default to 'user'
+            const role = user.roles && user.roles.length > 0 ? user.roles[0].name : 'user';
+            // Determine if user is active based on email_verified_at
+            const is_active = !!user.email_verified_at;
+            
+            return {
+              ...user,
+              role: role,
+              is_active: is_active,
+              // Add any missing fields with default values
+              phone: user.phone || 'N/A',
+              last_login_at: user.last_login_at || null
+            };
+          });
+          
+          setUsers(userData);
+          console.log('Processed users data:', userData);
+        } else {
+          console.error('API response data is not an array');
+          setUsers([]);
+        }
+      } else {
+        console.error('Invalid API response format');
+        setUsers([]);
+      }
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to fetch users');
@@ -50,7 +98,7 @@ const AdminUsers = () => {
   const handleDelete = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       try {
-        await adminAPI.delete(`/users/${userId}`);
+        await adminAPI.deleteUser(userId);
         toast.success('User deleted successfully');
         fetchUsers();
       } catch (error) {
@@ -62,48 +110,84 @@ const AdminUsers = () => {
 
   const handleToggleStatus = async (userId, currentStatus) => {
     try {
-      await adminAPI.put(`/users/${userId}`, {
-        is_active: !currentStatus
-      });
+      console.log('Toggling status for user:', userId, 'Current status:', currentStatus);
+      
+      // First, get the current user data
+      const response = await adminAPI.getUser(userId);
+      const userData = response.data;
+      
+      // Prepare update data with all required fields
+      const updateData = {
+        name: userData.name,
+        email: userData.email,
+        role: userData.roles && userData.roles.length > 0 ? userData.roles[0].name : 'user',
+        email_verified_at: !currentStatus ? new Date().toISOString() : null
+      };
+      
+      console.log('Sending update data:', updateData);
+      
+      await adminAPI.updateUser(userId, updateData);
       toast.success(`User ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
       fetchUsers();
     } catch (error) {
       console.error('Error updating user status:', error);
-      toast.error('Failed to update user status');
+      toast.error('Failed to update user status: ' + (error.response?.data?.message || error.message));
     }
   };
 
   const handleChangeRole = async (userId, newRole) => {
     if (window.confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
       try {
-        await adminAPI.put(`/users/${userId}`, {
-          role: newRole
-        });
+        // First, get the current user data
+        const response = await adminAPI.getUser(userId);
+        const userData = response.data;
+        
+        // Prepare update data with all required fields
+        const updateData = {
+          name: userData.name,
+          email: userData.email,
+          role: newRole,
+          email_verified_at: userData.email_verified_at
+        };
+        
+        await adminAPI.updateUser(userId, updateData);
         toast.success('User role updated successfully');
         fetchUsers();
       } catch (error) {
         console.error('Error updating user role:', error);
-        toast.error('Failed to update user role');
+        toast.error('Failed to update user role: ' + (error.response?.data?.message || error.message));
       }
     }
   };
 
   const handleResetPassword = async (userId) => {
-    if (window.confirm('Are you sure you want to reset this user\'s password? They will receive an email with reset instructions.')) {
-      try {
-        await adminAPI.post(`/users/${userId}/reset-password`);
-        toast.success('Password reset email sent successfully');
-      } catch (error) {
-        console.error('Error resetting password:', error);
-        toast.error('Failed to send password reset email');
-      }
+    // Create a prompt for the new password
+    const newPassword = window.prompt('Enter new password (minimum 8 characters)');
+    if (!newPassword) return; // User cancelled
+    
+    if (newPassword.length < 8) {
+      toast.error('Password must be at least 8 characters long');
+      return;
+    }
+    
+    try {
+      console.log('Resetting password for user:', userId);
+      const response = await adminAPI.resetUserPassword(userId, {
+        password: newPassword,
+        password_confirmation: newPassword
+      });
+      console.log('Password reset response:', response);
+      toast.success('Password reset successfully');
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      toast.error('Failed to reset password: ' + (error.response?.data?.message || error.message));
     }
   };
 
   const exportUsers = () => {
     const csvContent = "data:text/csv;charset=utf-8," 
       + "Name,Email,Role,Status,Phone,Created Date,Last Login\n"
-      + filteredUsers.map(user => 
+      + getFilteredUsers().map(user => 
           `"${user.name}","${user.email}","${user.role}","${user.is_active ? 'Active' : 'Inactive'}","${user.phone || ''}","${new Date(user.created_at).toLocaleDateString()}","${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : 'Never'}"`
         ).join("\n");
 
@@ -116,11 +200,13 @@ const AdminUsers = () => {
     document.body.removeChild(link);
   };
 
-  const filteredUsers = users.filter(user => {
+  const getFilteredUsers = () => {
+    if (!Array.isArray(users)) return [];
+    return users.filter(user => {
     const matchesSearch = 
-      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.phone?.toLowerCase().includes(searchTerm.toLowerCase());
+      (user.phone && user.phone.toLowerCase().includes(searchTerm.toLowerCase()))) || searchTerm === '';
 
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     
@@ -130,6 +216,7 @@ const AdminUsers = () => {
 
     return matchesSearch && matchesRole && matchesStatus;
   });
+  };
 
   const getRoleIcon = (role) => {
     switch (role) {
@@ -206,7 +293,7 @@ const AdminUsers = () => {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Total Users</dt>
-                  <dd className="text-lg font-medium text-gray-900">{users.length}</dd>
+                  <dd className="text-lg font-medium text-gray-900">{Array.isArray(users) ? users.length : 0}</dd>
                 </dl>
               </div>
             </div>
@@ -223,7 +310,7 @@ const AdminUsers = () => {
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Active Users</dt>
                   <dd className="text-lg font-medium text-gray-900">
-                    {users.filter(u => u.is_active).length}
+                    {Array.isArray(users) ? users.filter(u => u.is_active).length : 0}
                   </dd>
                 </dl>
               </div>
@@ -241,7 +328,7 @@ const AdminUsers = () => {
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Admins</dt>
                   <dd className="text-lg font-medium text-gray-900">
-                    {users.filter(u => u.role === 'admin').length}
+                    {Array.isArray(users) ? users.filter(u => u.role === 'admin').length : 0}
                   </dd>
                 </dl>
               </div>
@@ -259,7 +346,7 @@ const AdminUsers = () => {
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Inactive</dt>
                   <dd className="text-lg font-medium text-gray-900">
-                    {users.filter(u => !u.is_active).length}
+                    {Array.isArray(users) ? users.filter(u => !u.is_active).length : 0}
                   </dd>
                 </dl>
               </div>
