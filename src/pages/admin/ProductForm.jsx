@@ -16,10 +16,12 @@ const ProductForm = ({ readOnly = false }) => {
   const [categories, setCategories] = useState([]);
   
   const [formData, setFormData] = useState({
-    name: {},
-    description: {},
+    name: { en: '', ar: '' },
+    description: { en: '', ar: '' },
+    specifications: { en: '', ar: '' },
     category_id: '',
     is_active: true,
+    sort_order: 0,
     images: []
   });
 
@@ -41,7 +43,17 @@ const ProductForm = ({ readOnly = false }) => {
         if (!productData.images) {
           productData.images = [];
         }
-        setFormData(productData);
+        // Ensure all required fields are properly initialized
+        const normalizedData = {
+          name: { en: productData.name?.en || '', ar: productData.name?.ar || '' },
+          description: { en: productData.description?.en || '', ar: productData.description?.ar || '' },
+          specifications: { en: productData.specifications?.en || '', ar: productData.specifications?.ar || '' },
+          category_id: productData.category_id || '',
+          is_active: productData.is_active ?? true,
+          sort_order: productData.sort_order || 0,
+          images: productData.images || []
+        };
+        setFormData(normalizedData);
       } else {
         toast.error('Failed to load product data');
       }
@@ -131,6 +143,25 @@ const ProductForm = ({ readOnly = false }) => {
     e.preventDefault();
     if (readOnly) return;
     
+    // Validate required fields
+    if (!formData.name?.en?.trim()) {
+      toast.error('English name is required');
+      setSaving(false);
+      return;
+    }
+    
+    if (!formData.name?.ar?.trim()) {
+      toast.error('Arabic name is required');
+      setSaving(false);
+      return;
+    }
+    
+    if (!formData.category_id) {
+      toast.error('Category is required');
+      setSaving(false);
+      return;
+    }
+    
     setSaving(true);
     try {
       // Create a FormData object for file uploads
@@ -164,12 +195,15 @@ const ProductForm = ({ readOnly = false }) => {
         const existingImages = [];
         
         formData.images.forEach((image) => {
-          // Check if image is an object with file property
+          // Check if image is an object with file property (new upload)
           if (image.file instanceof File) {
             newImages.push(image.file);
           } else if (typeof image === 'string') {
             // This is an existing image URL from the server
             existingImages.push(image);
+          } else if (image.url && typeof image.url === 'string') {
+            // Handle case where image might be an object with url property
+            existingImages.push(image.url);
           }
         });
         
@@ -182,6 +216,9 @@ const ProductForm = ({ readOnly = false }) => {
         existingImages.forEach(url => {
           apiFormData.append('existing_images[]', url);
         });
+      } else {
+        // If no images, send empty array to clear existing images
+        apiFormData.append('existing_images[]', '');
       }
       
       let response;
@@ -200,16 +237,15 @@ const ProductForm = ({ readOnly = false }) => {
         // Handle validation errors
         const validationErrors = error.response.data.errors;
         if (validationErrors) {
-          // Display the first validation error
-          const firstError = Object.values(validationErrors)[0];
-          if (Array.isArray(firstError) && firstError.length > 0) {
-            toast.error(firstError[0]);
-          } else {
-            toast.error('Validation failed. Please check your inputs.');
-          }
+          // Display all validation errors
+          Object.entries(validationErrors).forEach(([field, messages]) => {
+            if (Array.isArray(messages) && messages.length > 0) {
+              toast.error(`${field}: ${messages[0]}`);
+            }
+          });
           
           // Log all validation errors for debugging
-          console.log('Validation errors:', validationErrors);
+          console.error('Validation errors:', validationErrors);
         } else {
           toast.error('Validation failed. Please check your inputs.');
         }
@@ -341,6 +377,49 @@ const ProductForm = ({ readOnly = false }) => {
           <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
             Active (visible on website)
           </label>
+        </div>
+
+        {/* Sort Order */}
+        <div>
+          <label htmlFor="sort_order" className="block text-sm font-medium text-gray-700 mb-2">
+            Sort Order
+          </label>
+          <input
+            type="number"
+            id="sort_order"
+            name="sort_order"
+            value={formData.sort_order || 0}
+            onChange={handleInputChange}
+            disabled={readOnly}
+            min="0"
+            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100 disabled:text-gray-500"
+          />
+        </div>
+
+        {/* Localized Specifications */}
+        <div className="space-y-4">
+          <label className="block text-sm font-medium text-gray-700">
+            Product Specifications
+          </label>
+          {languages.map((lang) => (
+            <div key={lang.code} className="flex flex-col">
+              <div className="flex items-center">
+                <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                  {lang.name}
+                </span>
+                <div className="flex-1 min-w-0 block w-full rounded-r-md border border-gray-300 focus-within:ring-primary-500 focus-within:border-primary-500">
+                  <textarea
+                    value={formData.specifications?.[lang.code] || ''}
+                    onChange={(e) => handleLocalizedInputChange('specifications', lang.code, e.target.value)}
+                    disabled={readOnly}
+                    rows="4"
+                    className="block w-full px-3 py-2 border-0 focus:ring-0 disabled:bg-gray-100 disabled:text-gray-500"
+                    placeholder={`Product specifications in ${lang.name}`}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Images */}

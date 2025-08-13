@@ -164,10 +164,10 @@ const AdminHeroSlides = () => {
                     <tr key={slide.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex-shrink-0 h-16 w-24">
-                          {slide.image_url ? (
+                          {slide.image ? (
                             <img
                               className="h-16 w-24 object-cover rounded-lg"
-                              src={slide.image_url}
+                              src={slide.image}
                               alt={getLocalized(slide.title)}
                             />
                           ) : (

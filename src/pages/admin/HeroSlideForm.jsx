@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { adminAPI } from '../../services/api';
+import api, { adminAPI } from '../../services/api';
 import { useLanguage } from '../../contexts/LanguageContext';
 import {
   Save,
@@ -53,7 +53,35 @@ const HeroSlideForm = () => {
     setLoading(true);
     try {
       const response = await adminAPI.getHeroSlide(id);
-      setFormData(response.data.data);
+      const slide = response.data.data;
+      
+      // Transform JSON data to individual form fields
+      const transformedData = {
+        title_en: slide.title?.en || '',
+        title_ar: slide.title?.ar || '',
+        title_bn: slide.title?.bn || '',
+        subtitle_en: slide.subtitle?.en || '',
+        subtitle_ar: slide.subtitle?.ar || '',
+        subtitle_bn: slide.subtitle?.bn || '',
+        description_en: slide.description?.en || '',
+        description_ar: slide.description?.ar || '',
+        description_bn: slide.description?.bn || '',
+        button_text_en: slide.button_text?.en || '',
+        button_text_ar: slide.button_text?.ar || '',
+        button_text_bn: slide.button_text?.bn || '',
+        button_url: slide.button_link || '',
+        image: slide.image || '',
+        background_image: slide.background_image || '',
+        video_url: slide.video_url || '',
+        order: slide.sort_order || 0,
+        is_active: slide.is_active ?? true,
+        show_overlay: slide.show_overlay ?? true,
+        overlay_opacity: slide.overlay_opacity || 50,
+        text_position: slide.text_position || 'center',
+        animation_type: slide.animation_type || 'fade'
+      };
+      
+      setFormData(transformedData);
     } catch (error) {
       console.error('Error fetching slide:', error);
       toast.error('Failed to fetch slide');
@@ -78,17 +106,23 @@ const HeroSlideForm = () => {
     formDataUpload.append('type', 'image');
 
     try {
-      const response = await adminAPI.post('/upload', formDataUpload, {
+      // Use the default api instance instead of adminAPI.post
+      const response = await api.post('/upload', formDataUpload, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
       
-      handleInputChange(field, response.data.url);
-      toast.success('File uploaded successfully');
+      if (response.data && response.data.url) {
+        handleInputChange(field, response.data.url);
+        toast.success('File uploaded successfully');
+      } else {
+        console.error('Invalid response format:', response.data);
+        toast.error('Failed to upload file: Invalid response format');
+      }
     } catch (error) {
       console.error('Error uploading file:', error);
-      toast.error('Failed to upload file');
+      toast.error(error.response?.data?.message || 'Failed to upload file');
     }
   };
 
@@ -97,14 +131,31 @@ const HeroSlideForm = () => {
     setSaving(true);
 
     try {
+      // Validate required fields
+      if (!formData.title_en) {
+        toast.error('Title in English is required');
+        setSaving(false);
+        return;
+      }
+
+      if (!formData.image) {
+        toast.error('Main image is required');
+        setSaving(false);
+        return;
+      }
+
       // Create a copy of the form data to send to the API
       const dataToSubmit = { ...formData };
+      
+      // Log the data being submitted for debugging
+      console.log('Submitting data:', dataToSubmit);
       
       if (id) {
         await adminAPI.updateHeroSlide(id, dataToSubmit);
         toast.success('Hero slide updated successfully');
       } else {
-        await adminAPI.createHeroSlide(dataToSubmit);
+        const response = await adminAPI.createHeroSlide(dataToSubmit);
+        console.log('Create response:', response);
         toast.success('Hero slide created successfully');
       }
       navigate('/admin/hero-slides');
@@ -112,6 +163,10 @@ const HeroSlideForm = () => {
       console.error('Error saving slide:', error);
       if (error.response && error.response.data && error.response.data.message) {
         toast.error(error.response.data.message);
+      } else if (error.response && error.response.data && error.response.data.errors) {
+        // Handle validation errors
+        const errorMessages = Object.values(error.response.data.errors).flat();
+        errorMessages.forEach(message => toast.error(message));
       } else {
         toast.error('Failed to save slide');
       }
@@ -330,6 +385,8 @@ const HeroSlideForm = () => {
                             const file = e.target.files[0];
                             if (file) {
                               handleFileUpload('image', file);
+                              // Clear the input value to allow selecting the same file again
+                              e.target.value = '';
                             }
                           }}
                         />
@@ -356,6 +413,8 @@ const HeroSlideForm = () => {
                             const file = e.target.files[0];
                             if (file) {
                               handleFileUpload('background_image', file);
+                              // Clear the input value to allow selecting the same file again
+                              e.target.value = '';
                             }
                           }}
                         />
