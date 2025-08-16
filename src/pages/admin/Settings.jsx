@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminAPI } from '../../services/api';
 import { useLanguage } from '../../contexts/LanguageContext';
+import ContactInfo from './ContactInfo';
 import {
   Save,
   Settings as SettingsIcon,
@@ -47,7 +48,7 @@ const AdminSettings = () => {
 
   const fetchSettings = async () => {
     try {
-      const response = await adminAPI.get('/settings');
+      const response = await adminAPI.getSettings();
       setSettings(response.data.data || {});
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -60,7 +61,7 @@ const AdminSettings = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await adminAPI.put('/settings', settings);
+      await adminAPI.updateSettings(settings);
       toast.success('Settings saved successfully');
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -83,11 +84,7 @@ const AdminSettings = () => {
     formData.append('key', key);
 
     try {
-      const response = await adminAPI.post('/settings/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await adminAPI.uploadSettingFile(formData);
       
       handleInputChange(key, response.data.url);
       toast.success('File uploaded successfully');
@@ -99,7 +96,7 @@ const AdminSettings = () => {
 
   const handleClearCache = async () => {
     try {
-      await adminAPI.post('/settings/clear-cache');
+      await adminAPI.clearCache();
       toast.success('Cache cleared successfully');
     } catch (error) {
       console.error('Error clearing cache:', error);
@@ -109,9 +106,7 @@ const AdminSettings = () => {
 
   const handleBackupSettings = async () => {
     try {
-      const response = await adminAPI.get('/settings/backup', {
-        responseType: 'blob'
-      });
+      const response = await adminAPI.backupSettings();
       
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -563,6 +558,52 @@ const AdminSettings = () => {
     </div>
   );
 
+  // Create a ref to access the AdminContactInfo component's methods
+  const contactInfoRef = React.useRef();
+  
+  // Function to save contact info when the main settings save button is clicked
+  const saveContactInfo = async () => {
+    if (contactInfoRef.current && contactInfoRef.current.handleSubmit) {
+      await contactInfoRef.current.handleSubmit();
+    }
+  };
+  
+  // Create an enhanced save function that also saves contact info
+  const enhancedHandleSave = async () => {
+    try {
+      await handleSave();
+      if (activeTab === 'appearance') {
+        console.log('Saving contact info...');
+        await saveContactInfo();
+        console.log('Contact info saved successfully');
+      }
+    } catch (error) {
+      console.error('Error in enhancedHandleSave:', error);
+    }
+  };
+  
+  const renderAppearanceSettings = () => {
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Appearance Settings</h3>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-6">
+              <div className="border-t border-gray-200 pt-6">
+                <h4 className="text-md font-medium text-gray-900 mb-4">Contact Information</h4>
+                <p className="text-sm text-gray-500 mb-4">
+                  Manage your organization's contact information that will be displayed on the website.
+                </p>
+                <ContactInfo ref={contactInfoRef} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'general':
@@ -575,6 +616,8 @@ const AdminSettings = () => {
         return renderSecuritySettings();
       case 'advanced':
         return renderAdvancedSettings();
+      case 'appearance':
+        return renderAppearanceSettings();
       default:
         return <div>Tab content not implemented yet.</div>;
     }
@@ -602,17 +645,18 @@ const AdminSettings = () => {
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
           <button
-            onClick={handleSave}
-            disabled={saving}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
-          >
-            {saving ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
-            {saving ? 'Saving...' : 'Save Settings'}
-          </button>
+              type="button"
+              onClick={activeTab === 'appearance' ? enhancedHandleSave : handleSave}
+              disabled={saving}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+            >
+              {saving ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
         </div>
       </div>
 

@@ -15,7 +15,6 @@ const Products = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     fetchProducts();

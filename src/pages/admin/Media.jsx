@@ -33,7 +33,7 @@ const AdminMedia = () => {
 
   const fetchMedia = async () => {
     try {
-      const response = await adminAPI.get('/media');
+      const response = await adminAPI.getMedia();
       setMedia(response.data.data || []);
     } catch (error) {
       console.error('Error fetching media:', error);
@@ -55,11 +55,7 @@ const AdminMedia = () => {
     });
 
     try {
-      await adminAPI.post('/media/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      await adminAPI.uploadMedia(formData);
       toast.success(`${files.length} file(s) uploaded successfully`);
       fetchMedia();
     } catch (error) {
@@ -74,7 +70,7 @@ const AdminMedia = () => {
   const handleDelete = async (mediaId) => {
     if (window.confirm('Are you sure you want to delete this file?')) {
       try {
-        await adminAPI.delete(`/media/${mediaId}`);
+        await adminAPI.deleteMedia(mediaId);
         toast.success('File deleted successfully');
         fetchMedia();
       } catch (error) {
@@ -90,7 +86,7 @@ const AdminMedia = () => {
     if (window.confirm(`Are you sure you want to delete ${selectedFiles.length} selected file(s)?`)) {
       try {
         await Promise.all(
-          selectedFiles.map(id => adminAPI.delete(`/media/${id}`))
+          selectedFiles.map(id => adminAPI.deleteMedia(id))
         );
         toast.success(`${selectedFiles.length} file(s) deleted successfully`);
         setSelectedFiles([]);

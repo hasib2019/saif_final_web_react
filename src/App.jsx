@@ -28,6 +28,7 @@ import AdminContact from './pages/admin/Contact';
 import AdminUsers from './pages/admin/Users';
 import AdminLanguages from './pages/admin/Languages';
 import AdminSettings from './pages/admin/Settings';
+import AdminContactInfo from './pages/admin/ContactInfo';
 import AdminHeroSlideForm from './pages/admin/HeroSlideForm';
 import CategoryForm from './pages/admin/CategoryForm';
 import ProductForm from './pages/admin/ProductForm';
@@ -142,6 +143,21 @@ function App() {
                     <AdminPartners />
                   </ProtectedRoute>
                 } />
+                <Route path="partners/create" element={
+                  <ProtectedRoute requiredPermission="manage-partners">
+                    <AdminPartners isCreating={true} />
+                  </ProtectedRoute>
+                } />
+                <Route path="partners/:id/edit" element={
+                  <ProtectedRoute requiredPermission="manage-partners">
+                    <AdminPartners isEditing={true} />
+                  </ProtectedRoute>
+                } />
+                <Route path="partners/:id" element={
+                  <ProtectedRoute requiredPermission="manage-partners">
+                    <AdminPartners readOnly={true} />
+                  </ProtectedRoute>
+                } />
                 <Route path="contact" element={
                   <ProtectedRoute requiredPermission="view-form-submissions">
                     <AdminContact />
@@ -177,6 +193,17 @@ function App() {
                     <AdminLanguages />
                   </ProtectedRoute>
                 } />
+                <Route path="media" element={
+                  <ProtectedRoute requiredPermission="manage-media">
+                    <AdminMedia />
+                  </ProtectedRoute>
+                } />
+                <Route path="settings" element={
+                  <ProtectedRoute requiredPermission="manage-settings">
+                    <AdminSettings />
+                  </ProtectedRoute>
+                } />
+
               </Route>
               
               {/* Public Website Routes */}

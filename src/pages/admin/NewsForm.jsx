@@ -27,6 +27,7 @@ const NewsForm = ({ readOnly = false }) => {
     content_ar: '',
     content_bn: '',
     image: null,
+    featured_image: null, // Store the actual file object here
     is_active: true,
     published_at: new Date().toISOString().split('T')[0],
   });
@@ -41,7 +42,42 @@ const NewsForm = ({ readOnly = false }) => {
     setLoading(true);
     try {
       const response = await adminAPI.getPressRelease(id);
-      setFormData(response.data.data);
+      console.log('Fetched news data:', response);
+      
+      // Handle different response formats
+      let newsData;
+      if (response.data && response.data.data) {
+        // Standard format with data property
+        newsData = response.data.data;
+      } else if (response.data && response.data.success && response.data.data) {
+        // Success format with nested data
+        newsData = response.data.data;
+      } else {
+        // Direct data format
+        newsData = response.data;
+      }
+      
+      console.log('Processed news data:', newsData);
+      
+      // Map the data to the form fields
+      const mappedData = {
+        title_en: newsData.title?.en || '',
+        title_ar: newsData.title?.ar || '',
+        title_bn: newsData.title?.bn || '',
+        excerpt_en: newsData.excerpt?.en || '',
+        excerpt_ar: newsData.excerpt?.ar || '',
+        excerpt_bn: newsData.excerpt?.bn || '',
+        content_en: newsData.content?.en || '',
+        content_ar: newsData.content?.ar || '',
+        content_bn: newsData.content?.bn || '',
+        image: newsData.image || newsData.featured_image || '',
+        featured_image: null, // Reset featured_image to null since we're not uploading a new file yet
+        is_active: newsData.is_active !== undefined ? newsData.is_active : true,
+        published_at: newsData.published_at ? newsData.published_at.split('T')[0] : new Date().toISOString().split('T')[0],
+      };
+      
+      console.log('Mapped form data:', mappedData);
+      setFormData(mappedData);
     } catch (error) {
       console.error('Error fetching news:', error);
       toast.error('Failed to fetch news article');
@@ -62,23 +98,59 @@ const NewsForm = ({ readOnly = false }) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Store the file object directly for form submission
+    handleInputChange('featured_image', file);
+    
+    // Also create a preview URL for display
+    const previewUrl = URL.createObjectURL(file);
+    handleInputChange('image', previewUrl);
+    
+    toast.success('Image selected successfully');
+    
+    // Optional: You can still upload the image immediately if needed
+    // But for this fix, we'll just store the file and upload it with the form
+    /*
     const formDataUpload = new FormData();
     formDataUpload.append('file', file);
     formDataUpload.append('type', 'image');
+    formDataUpload.append('folder', 'news');
 
     try {
-      const response = await adminAPI.post('/upload', formDataUpload, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await adminAPI.uploadFile(formDataUpload);
+      console.log('Image upload response:', response);
       
-      handleInputChange('image', response.data.url);
-      toast.success('Image uploaded successfully');
+      // Handle different response formats
+      let imageUrl = null;
+      
+      if (response.data) {
+        if (response.data.success && response.data.url) {
+          // Format: { success: true, url: '...' }
+          imageUrl = response.data.url;
+        } else if (response.data.success && response.data.data && response.data.data.url) {
+          // Format: { success: true, data: { url: '...' } }
+          imageUrl = response.data.data.url;
+        } else if (response.data.url) {
+          // Format: { url: '...' }
+          imageUrl = response.data.url;
+        } else if (typeof response.data === 'string') {
+          // Format: Direct URL string
+          imageUrl = response.data;
+        }
+      }
+      
+      if (imageUrl) {
+        console.log('Image uploaded successfully:', imageUrl);
+        handleInputChange('image', imageUrl);
+        toast.success('Image uploaded successfully');
+      } else {
+        console.error('Invalid response format:', response.data);
+        toast.error('Failed to upload image: Invalid response format');
+      }
     } catch (error) {
       console.error('Error uploading image:', error);
-      toast.error('Failed to upload image');
+      toast.error(error.response?.data?.message || 'Failed to upload image');
     }
+    */
   };
 
   const handleSubmit = async (e) => {
@@ -88,17 +160,85 @@ const NewsForm = ({ readOnly = false }) => {
     setSaving(true);
 
     try {
+      // Check if we need to use FormData (when we have a file)
+      const hasNewImage = formData.featured_image instanceof File;
+      
+      let apiData;
+      if (hasNewImage) {
+        // Use FormData when we have a file to upload
+        apiData = new FormData();
+        
+        // Add title as an array with language keys
+        apiData.append('title[en]', formData.title_en || '');
+        apiData.append('title[ar]', formData.title_ar || '');
+        apiData.append('title[bn]', formData.title_bn || '');
+        
+        // Add excerpt as an array with language keys
+        apiData.append('excerpt[en]', formData.excerpt_en || '');
+        apiData.append('excerpt[ar]', formData.excerpt_ar || '');
+        apiData.append('excerpt[bn]', formData.excerpt_bn || '');
+        
+        // Add content as an array with language keys
+        apiData.append('content[en]', formData.content_en || '');
+        apiData.append('content[ar]', formData.content_ar || '');
+        apiData.append('content[bn]', formData.content_bn || '');
+        
+        // Add the file directly
+        apiData.append('featured_image', formData.featured_image);
+        
+        // Add other fields - convert boolean to string 'true'/'false' for proper handling
+        apiData.append('is_active', formData.is_active !== undefined ? String(formData.is_active) : 'true');
+        apiData.append('published_at', formData.published_at || new Date().toISOString().split('T')[0]);
+      } else {
+        // Use FormData even without a file to ensure proper array format
+        apiData = new FormData();
+        
+        // Add title as an array with language keys
+        apiData.append('title[en]', formData.title_en || '');
+        apiData.append('title[ar]', formData.title_ar || '');
+        apiData.append('title[bn]', formData.title_bn || '');
+        
+        // Add excerpt as an array with language keys
+        apiData.append('excerpt[en]', formData.excerpt_en || '');
+        apiData.append('excerpt[ar]', formData.excerpt_ar || '');
+        apiData.append('excerpt[bn]', formData.excerpt_bn || '');
+        
+        // Add content as an array with language keys
+        apiData.append('content[en]', formData.content_en || '');
+        apiData.append('content[ar]', formData.content_ar || '');
+        apiData.append('content[bn]', formData.content_bn || '');
+        
+        // Add other fields
+         apiData.append('image', formData.image || '');
+         apiData.append('is_active', formData.is_active !== undefined ? String(formData.is_active) : 'true');
+         apiData.append('published_at', formData.published_at || new Date().toISOString().split('T')[0]);
+      }
+
+      console.log('Submitting news data:', hasNewImage ? 'FormData with file' : apiData);
+
       if (id) {
-        await adminAPI.updatePressRelease(id, formData);
+        const response = await adminAPI.updatePressRelease(id, apiData);
+        console.log('Update response:', response);
         toast.success('News article updated successfully');
       } else {
-        await adminAPI.createPressRelease(formData);
+        const response = await adminAPI.createPressRelease(apiData);
+        console.log('Create response:', response);
         toast.success('News article created successfully');
       }
       navigate('/admin/news');
     } catch (error) {
       console.error('Error saving news:', error);
-      toast.error('Failed to save news article');
+      const errorMessage = error.response?.data?.message || 'Failed to save news article';
+      toast.error(errorMessage);
+      
+      // Display validation errors if available
+      if (error.response?.data?.errors) {
+        const errors = error.response.data.errors;
+        const firstError = Object.values(errors)[0];
+        if (firstError && firstError[0]) {
+          toast.error(firstError[0]);
+        }
+      }
     } finally {
       setSaving(false);
     }
@@ -270,9 +410,21 @@ const NewsForm = ({ readOnly = false }) => {
                     {formData.image && (
                       <div className="mt-2">
                         <img 
-                          src={formData.image} 
+                          src={formData.image.startsWith('http') ? formData.image : `/storage/${formData.image}`} 
                           alt="Featured" 
                           className="h-48 w-auto object-cover rounded-md" 
+                          onError={(e) => {
+                            console.error('Image load error, trying alternative path');
+                            // Try alternative path if the first one fails
+                            if (!e.target.src.includes('/storage/')) {
+                              e.target.src = `/storage/${formData.image}`;
+                            } else if (!e.target.src.includes('/public/')) {
+                              e.target.src = `/public/storage/${formData.image}`;
+                            } else {
+                              // If all attempts fail, show a placeholder
+                              e.target.src = '/logo.svg';
+                            }
+                          }}
                         />
                       </div>
                     )}

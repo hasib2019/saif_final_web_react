@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { publicAPI } from '../services/api';
 import { useForm } from 'react-hook-form';
@@ -52,59 +52,107 @@ const Contact = () => {
     }
   };
 
-  const contactInfo = [
+  const [contactInfo, setContactInfo] = useState([
     {
       icon: Mail,
       title: 'Email',
-      details: ['info@derown.com', 'support@derown.com'],
+      details: ['Loading...'],
     },
     {
       icon: Phone,
       title: 'Phone',
-      details: ['+1 (555) 123-4567', '+1 (555) 987-6543'],
+      details: ['Loading...'],
     },
     {
       icon: MapPin,
       title: 'Address',
-      details: ['123 Technology Street', 'Tech City, TC 12345', 'United States'],
+      details: ['Loading...'],
     },
     {
       icon: Clock,
       title: 'Business Hours',
-      details: ['Monday - Friday: 9:00 AM - 6:00 PM', 'Saturday: 10:00 AM - 4:00 PM', 'Sunday: Closed'],
+      details: ['Loading...'],
     },
-  ];
+  ]);
+  
+  const [mapEmbedCode, setMapEmbedCode] = useState('');
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchContactInfo = async () => {
+      try {
+        const response = await publicAPI.getContactInfo();
+        
+        if (response.data.success && response.data.data) {
+          const info = response.data.data;
+          
+          // Update contact info with data from API
+          const updatedInfo = [
+            {
+              icon: Mail,
+              title: 'Email',
+              details: info.email ? [info.email] : ['No email available'],
+            },
+            {
+              icon: Phone,
+              title: 'Phone',
+              details: info.phone ? [info.phone] : ['No phone available'],
+            },
+            {
+              icon: MapPin,
+              title: 'Address',
+              details: info.address ? info.address.split('\n') : ['No address available'],
+            },
+            {
+              icon: Clock,
+              title: 'Business Hours',
+              details: info.business_hours ? info.business_hours.split('\n') : ['No business hours available'],
+            },
+          ];
+          
+          setContactInfo(updatedInfo);
+          setMapEmbedCode(info.map_embed_code || '');
+        }
+      } catch (error) {
+        console.error('Error fetching contact info:', error);
+        // Keep default values if there's an error
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchContactInfo();
+  }, []);
 
   const inquiryTypes = [
     { value: 'general', label: 'General Inquiry' },
-    { value: 'sales', label: 'Sales' },
+    { value: 'contact', label: 'Contact' },
     { value: 'support', label: 'Technical Support' },
-    { value: 'partnership', label: 'Partnership' },
-    { value: 'media', label: 'Media & Press' },
+    { value: 'quote', label: 'Quote Request' },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-primary-600 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="py-16 text-white bg-primary-600">
+        <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            <h1 className="mb-4 text-4xl font-bold md:text-5xl">
               {t('contact.title')}
             </h1>
-            <p className="text-xl text-primary-100 max-w-2xl mx-auto">
+            <p className="mx-auto max-w-2xl text-xl text-primary-100">
               Get in touch with our team. We're here to help you with any questions or inquiries.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+      <div className="px-4 py-16 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
           {/* Contact Information */}
           <div className="lg:col-span-1">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Get in Touch</h2>
-            <p className="text-gray-600 mb-8">
+            <h2 className="mb-6 text-2xl font-bold text-gray-900">Get in Touch</h2>
+            <p className="mb-8 text-gray-600">
               We'd love to hear from you. Send us a message and we'll respond as soon as possible.
             </p>
 
@@ -114,12 +162,12 @@ const Contact = () => {
                 return (
                   <div key={index} className="flex items-start space-x-4">
                     <div className="flex-shrink-0">
-                      <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+                      <div className="flex justify-center items-center w-12 h-12 rounded-lg bg-primary-100">
                         <Icon className="w-6 h-6 text-primary-600" />
                       </div>
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                      <h3 className="mb-1 text-lg font-semibold text-gray-900">
                         {info.title}
                       </h3>
                       {info.details.map((detail, idx) => (
@@ -133,23 +181,31 @@ const Contact = () => {
               })}
             </div>
 
-            {/* Map placeholder */}
+            {/* Map */}
             <div className="mt-8">
-              <div className="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center">
-                <p className="text-gray-500">Interactive Map</p>
-              </div>
+              {loading ? (
+                <div className="flex justify-center items-center w-full h-48 bg-gray-200 rounded-lg">
+                  <p className="text-gray-500">Loading map...</p>
+                </div>
+              ) : mapEmbedCode ? (
+                <div className="overflow-hidden w-full h-64 rounded-lg" dangerouslySetInnerHTML={{ __html: mapEmbedCode }} />
+              ) : (
+                <div className="flex justify-center items-center w-full h-48 bg-gray-200 rounded-lg">
+                  <p className="text-gray-500">Map not available</p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Contact Form */}
           <div className="lg:col-span-2">
             <div className="card">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Send us a Message</h2>
+              <h2 className="mb-6 text-2xl font-bold text-gray-900">Send us a Message</h2>
               
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="name" className="block mb-2 text-sm font-medium text-gray-700">
                       {t('contact.name')} *
                     </label>
                     <input
@@ -165,7 +221,7 @@ const Contact = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-700">
                       {t('contact.email')} *
                     </label>
                     <input
@@ -181,9 +237,9 @@ const Contact = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="phone" className="block mb-2 text-sm font-medium text-gray-700">
                       {t('contact.phone')}
                     </label>
                     <input
@@ -196,7 +252,7 @@ const Contact = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="company" className="block mb-2 text-sm font-medium text-gray-700">
                       {t('contact.company')}
                     </label>
                     <input
@@ -210,7 +266,7 @@ const Contact = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="type" className="block mb-2 text-sm font-medium text-gray-700">
                     Inquiry Type *
                   </label>
                   <select
@@ -230,7 +286,7 @@ const Contact = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="subject" className="block mb-2 text-sm font-medium text-gray-700">
                     {t('contact.subject')} *
                   </label>
                   <input
@@ -246,7 +302,7 @@ const Contact = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="message" className="block mb-2 text-sm font-medium text-gray-700">
                     {t('contact.message')} *
                   </label>
                   <textarea
@@ -265,11 +321,11 @@ const Contact = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full md:w-auto inline-flex items-center justify-center px-8 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white font-semibold rounded-lg transition-colors duration-200"
+                    className="inline-flex justify-center items-center px-8 py-3 w-full font-semibold text-white rounded-lg transition-colors duration-200 md:w-auto bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400"
                   >
                     {isSubmitting ? (
                       <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                        <div className="mr-2 w-5 h-5 rounded-full border-b-2 border-white animate-spin"></div>
                         Sending...
                       </>
                     ) : (

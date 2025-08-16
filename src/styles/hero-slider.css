@@ -1,0 +1,50 @@
+/* Hero Slider Styles */
+.hero-slider {
+  position: relative;
+}
+
+/* Customize dots */
+.hero-slider .slick-dots {
+  bottom: 20px;
+  z-index: 10;
+}
+
+.hero-slider .slick-dots li button:before {
+  color: white;
+  opacity: 0.5;
+  font-size: 10px;
+}
+
+.hero-slider .slick-dots li.slick-active button:before {
+  color: white;
+  opacity: 1;
+}
+
+/* Customize arrows */
+.hero-slider .slick-prev,
+.hero-slider .slick-next {
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+}
+
+.hero-slider .slick-prev {
+  left: 20px;
+}
+
+.hero-slider .slick-next {
+  right: 20px;
+}
+
+.hero-slider .slick-prev:before,
+.hero-slider .slick-next:before {
+  font-size: 40px;
+  opacity: 0.75;
+}
+
+/* Ensure images maintain aspect ratio */
+.hero-slider img {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+}

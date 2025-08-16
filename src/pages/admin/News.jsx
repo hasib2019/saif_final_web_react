@@ -28,16 +28,50 @@ const AdminNews = () => {
   const fetchNews = async () => {
     try {
       const response = await adminAPI.getPressReleases();
-      setNews(response.data.data || []);
+      console.log('API Response:', response); // Debug log
+      console.log('API Response Data:', response.data); // Debug log
+      
+      // Handle the specific response format from the API
+      if (response && response.data) {
+        let newsData;
+        
+        // Check if the response has the pagination format
+        if (response.data.data && Array.isArray(response.data.data)) {
+          newsData = response.data.data;
+        } 
+        // Check if the response has the success format
+        else if (response.data.success && response.data.data && response.data.data.data) {
+          newsData = response.data.data.data;
+        }
+        // Fallback to the response data itself
+        else {
+          newsData = Array.isArray(response.data) ? response.data : [];
+        }
+        
+        console.log('News Data:', newsData); // Debug log
+        console.log('News Data Type:', Array.isArray(newsData) ? 'Array' : typeof newsData); // Debug log
+        console.log('News Data Length:', Array.isArray(newsData) ? newsData.length : 'Not an array'); // Debug log
+        
+        setNews(Array.isArray(newsData) ? newsData : []);
+      } else {
+        console.error('Invalid response format:', response);
+        toast.error('Invalid response format from server');
+        setNews([]);
+      }
     } catch (error) {
       console.error('Error fetching news:', error);
       toast.error('Failed to fetch news');
+      setNews([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (newsId) => {
+    if (!newsId) {
+      toast.error('Cannot delete: Invalid news ID');
+      return;
+    }
     if (window.confirm('Are you sure you want to delete this news article?')) {
       try {
         await adminAPI.deletePressRelease(newsId);
@@ -51,22 +85,53 @@ const AdminNews = () => {
   };
 
   const handleToggleStatus = async (newsId, currentStatus) => {
+    if (!newsId) {
+      toast.error('Cannot update status: Invalid news ID');
+      return;
+    }
     try {
-      await adminAPI.updatePressRelease(newsId, {
-        is_active: !currentStatus
-      });
+      console.log(`Toggling status for news ID ${newsId} from ${currentStatus} to ${!currentStatus}`);
+      
+      // First fetch the current press release data
+      const currentData = await adminAPI.getPressRelease(newsId);
+      console.log('Current press release data:', currentData);
+      
+      if (!currentData || !currentData.data) {
+        throw new Error('Failed to fetch current press release data');
+      }
+      
+      const pressReleaseData = currentData.data.success && currentData.data.data ? 
+        currentData.data.data : currentData.data;
+      
+      // Create a structured data object for the API with all required fields
+      const updateData = {
+        title: pressReleaseData.title || { en: '', ar: '' },
+        content: pressReleaseData.content || { en: '', ar: '' },
+        description: pressReleaseData.description || { en: '', ar: '' },
+        is_active: !currentStatus,
+        published_at: pressReleaseData.published_at || null
+      };
+      
+      console.log('Sending update data:', updateData);
+      
+      const response = await adminAPI.updatePressRelease(newsId, updateData);
+      console.log('Status update response:', response);
+      
       toast.success('News status updated successfully');
       fetchNews();
     } catch (error) {
       console.error('Error updating news status:', error);
-      toast.error('Failed to update news status');
+      toast.error('Failed to update news status: ' + (error.response?.data?.message || error.message));
     }
   };
 
-  const filteredNews = news.filter(item =>
-    getLocalized(item.title)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    getLocalized(item.excerpt)?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Ensure news is an array before filtering
+  const filteredNews = Array.isArray(news) 
+    ? news.filter(item =>
+        getLocalized(item?.title)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getLocalized(item?.excerpt)?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : [];
 
   if (loading) {
     return (
@@ -169,59 +234,60 @@ const AdminNews = () => {
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
-                              {getLocalized(item.title)}
+                              {getLocalized(item?.title) || 'Untitled'}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-500 max-w-xs truncate">
-                          {getLocalized(item.excerpt)}
+                          {getLocalized(item?.excerpt) || 'No excerpt available'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                          {item.published_date ? new Date(item.published_date).toLocaleDateString() : 'Not set'}
+                          {item?.published_date ? new Date(item.published_date).toLocaleDateString() : 'Not set'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
-                          onClick={() => handleToggleStatus(item.id, item.is_active)}
+                          onClick={() => handleToggleStatus(item?.id, item?.is_active)}
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            item.is_active 
+                            item?.is_active 
                               ? 'bg-green-100 text-green-800 hover:bg-green-200' 
                               : 'bg-red-100 text-red-800 hover:bg-red-200'
                           }`}
                         >
-                          {item.is_active ? (
+                          {item?.is_active ? (
                             <ToggleRight className="h-4 w-4 mr-1" />
                           ) : (
                             <ToggleLeft className="h-4 w-4 mr-1" />
                           )}
-                          {item.is_active ? 'Published' : 'Draft'}
+                          {item?.is_active ? 'Published' : 'Draft'}
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(item.created_at).toLocaleDateString()}
+                        {item?.created_at ? new Date(item.created_at).toLocaleDateString() : 'Unknown'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-2">
                           <Link
-                            to={`/admin/news/${item.id}`}
+                            to={`/admin/news/${item?.id || ''}`}
                             className="text-primary-600 hover:text-primary-900"
                           >
                             <Eye className="h-4 w-4" />
                           </Link>
                           <Link
-                            to={`/admin/news/${item.id}/edit`}
+                            to={`/admin/news/${item?.id || ''}/edit`}
                             className="text-yellow-600 hover:text-yellow-900"
                           >
                             <Edit className="h-4 w-4" />
                           </Link>
                           <button
-                            onClick={() => handleDelete(item.id)}
+                            onClick={() => item?.id && handleDelete(item.id)}
                             className="text-red-600 hover:text-red-900"
+                            disabled={!item?.id}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>

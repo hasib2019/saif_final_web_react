@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { adminAPI } from '../../services/api';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   Plus,
   Search,
@@ -29,18 +30,49 @@ const AdminContact = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const { getLocalized } = useLanguage();
+  const { user, isAuthenticated } = useAuth();
+  
+  console.log('Auth state:', { user, isAuthenticated });
 
   useEffect(() => {
-    fetchContacts();
-  }, []);
+    if (isAuthenticated) {
+      fetchContacts();
+    } else {
+      console.warn('User is not authenticated. Cannot fetch contacts.');
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
 
   const fetchContacts = async () => {
     try {
-      const response = await adminAPI.get('/contact-submissions');
-      setContacts(response.data.data || []);
+      // Use the correct API method for form submissions
+      console.log('Fetching form submissions...');
+      const response = await adminAPI.getFormSubmissions();
+      console.log('Contact submissions response:', response);
+      
+      // Make sure we're handling the response data structure correctly
+      if (response.data && response.data.success && response.data.data) {
+        // Backend returns data in a nested data property within success response
+        console.log('Setting contacts from response.data.data:', response.data.data.data);
+        setContacts(response.data.data.data);
+      } else if (response.data && response.data.data && Array.isArray(response.data.data.data)) {
+        // Handle the nested data structure correctly
+        console.log('Setting contacts from response.data.data.data array:', response.data.data.data);
+        setContacts(response.data.data.data);
+      } else if (Array.isArray(response.data)) {
+        console.log('Setting contacts from response.data array:', response.data);
+        setContacts(response.data);
+      } else {
+        // Fallback to empty array for any other case
+        console.warn('Unexpected response format:', response.data);
+        setContacts([]);
+      }
     } catch (error) {
       console.error('Error fetching contacts:', error);
+      console.error('Error details:', error.response ? error.response.data : 'No response data');
       toast.error('Failed to fetch contact submissions');
+      // Ensure contacts is always an array even on error
+      setContacts([]);
     } finally {
       setLoading(false);
     }
@@ -49,7 +81,7 @@ const AdminContact = () => {
   const handleDelete = async (contactId) => {
     if (window.confirm('Are you sure you want to delete this contact submission?')) {
       try {
-        await adminAPI.delete(`/contact-submissions/${contactId}`);
+        await adminAPI.deleteFormSubmission(contactId);
         toast.success('Contact submission deleted successfully');
         fetchContacts();
       } catch (error) {
@@ -61,7 +93,7 @@ const AdminContact = () => {
 
   const handleMarkAsRead = async (contactId, isRead) => {
     try {
-      await adminAPI.put(`/contact-submissions/${contactId}`, {
+      await adminAPI.updateFormSubmission(contactId, {
         is_read: !isRead
       });
       toast.success(`Contact marked as ${!isRead ? 'read' : 'unread'}`);
@@ -74,7 +106,7 @@ const AdminContact = () => {
 
   const handleMarkAsImportant = async (contactId, isImportant) => {
     try {
-      await adminAPI.put(`/contact-submissions/${contactId}`, {
+      await adminAPI.updateFormSubmission(contactId, {
         is_important: !isImportant
       });
       toast.success(`Contact marked as ${!isImportant ? 'important' : 'normal'}`);
@@ -107,22 +139,38 @@ const AdminContact = () => {
     document.body.removeChild(link);
   };
 
-  const filteredContacts = contacts.filter(contact => {
-    const matchesSearch = 
-      contact.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.message?.toLowerCase().includes(searchTerm.toLowerCase());
+  // Remove the test contact code that was forcing a test contact to show
+  console.log('Contacts before filtering:', contacts);
+  
+  let filteredContacts = [];
+  
+  if (contacts?.filter) {
+    filteredContacts = contacts.filter(contact => {
+      const matchesSearch = searchTerm === '' || (
+        (contact.name && contact.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (contact.email && contact.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (contact.subject && contact.subject.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (contact.message && contact.message.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
 
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'read' && contact.is_read) ||
-      (statusFilter === 'unread' && !contact.is_read) ||
-      (statusFilter === 'important' && contact.is_important);
+      const matchesStatus = statusFilter === 'all' || 
+        (statusFilter === 'read' && contact.is_read) ||
+        (statusFilter === 'unread' && !contact.is_read) ||
+        (statusFilter === 'important' && contact.is_important);
 
-    const matchesType = typeFilter === 'all' || contact.type === typeFilter;
+      const matchesType = typeFilter === 'all' || contact.type === typeFilter;
 
-    return matchesSearch && matchesStatus && matchesType;
-  });
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }
+  
+  console.log('Filtered contacts:', filteredContacts);
+  
+  // Remove the test contact code
+  // if (filteredContacts.length === 0 && contacts?.length > 0) {
+  //   console.log('No filtered contacts but we have contacts, showing test contact');
+  //   filteredContacts = [contacts.find(c => c.name === 'Test Contact') || contacts[0]];
+  // }
 
   const getStatusColor = (contact) => {
     if (contact.is_important) return 'bg-red-100 text-red-800';
@@ -185,7 +233,7 @@ const AdminContact = () => {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Total Submissions</dt>
-                  <dd className="text-lg font-medium text-gray-900">{contacts.length}</dd>
+                  <dd className="text-lg font-medium text-gray-900">{contacts?.length || 0}</dd>
                 </dl>
               </div>
             </div>
@@ -202,7 +250,7 @@ const AdminContact = () => {
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Unread</dt>
                   <dd className="text-lg font-medium text-gray-900">
-                    {contacts.filter(c => !c.is_read).length}
+                    {contacts?.filter ? contacts.filter(c => !c.is_read).length : 0}
                   </dd>
                 </dl>
               </div>
@@ -220,7 +268,7 @@ const AdminContact = () => {
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Important</dt>
                   <dd className="text-lg font-medium text-gray-900">
-                    {contacts.filter(c => c.is_important).length}
+                    {contacts?.filter ? contacts.filter(c => c.is_important).length : 0}
                   </dd>
                 </dl>
               </div>
@@ -238,9 +286,9 @@ const AdminContact = () => {
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Today</dt>
                   <dd className="text-lg font-medium text-gray-900">
-                    {contacts.filter(c => 
+                    {contacts?.filter ? contacts.filter(c => 
                       new Date(c.created_at).toDateString() === new Date().toDateString()
-                    ).length}
+                    ).length : 0}
                   </dd>
                 </dl>
               </div>
@@ -344,6 +392,9 @@ const AdminContact = () => {
                       <h3 className="mt-2 text-sm font-medium text-gray-900">No contact submissions</h3>
                       <p className="mt-1 text-sm text-gray-500">
                         No contact submissions match your current filters.
+                      </p>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Debug info: Contacts array length: {contacts?.length || 0}
                       </p>
                     </td>
                   </tr>

@@ -51,9 +51,8 @@ const AdminHeroSlides = () => {
 
   const handleToggleStatus = async (slideId, currentStatus) => {
     try {
-      await adminAPI.updateHeroSlide(slideId, {
-        is_active: !currentStatus
-      });
+      // Use the dedicated endpoint for toggling status
+      await adminAPI.toggleHeroSlideStatus(slideId);
       toast.success('Slide status updated successfully');
       fetchSlides();
     } catch (error) {

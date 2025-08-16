@@ -49,6 +49,7 @@ const AdminLayout = () => {
     { name: 'Media', href: '/admin/media', icon: Image, permission: 'manage-media' },
     { name: 'Partners', href: '/admin/partners', icon: Building, permission: 'manage-partners' },
     { name: 'Contact', href: '/admin/contact', icon: MessageSquare, permission: 'view-form-submissions' },
+    { name: 'Contact Info', href: '/admin/contact-info', icon: MessageSquare, permission: 'manage-settings' },
     { name: 'Users', href: '/admin/users', icon: Users, permission: 'manage-users' },
     { name: 'Languages', href: '/admin/languages', icon: Globe, permission: 'manage-languages' },
     { name: 'Settings', href: '/admin/settings', icon: Settings, permission: 'manage-settings' },
