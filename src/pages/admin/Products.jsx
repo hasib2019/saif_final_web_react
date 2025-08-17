@@ -234,7 +234,7 @@ const AdminProducts = () => {
                           {Array.isArray(product.images) && product.images.length > 0 ? (
                             <img
                               className="h-12 w-12 rounded-lg object-cover"
-                              src={`http://127.0.0.1:8000/storage/${product.images[0]}`}
+                              src={`https://saif-app.creativeitbari.com/storage/${product.images[0]}`}
                               alt={getLocalized(product.name) || 'Product'}
                             />
                           ) : (

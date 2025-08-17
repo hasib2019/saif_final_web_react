@@ -56,6 +56,7 @@ export const authAPI = {
 export const publicAPI = {
   getLanguages: () => api.get('/languages'),
   getCompanyInfo: () => api.get('/public/company-info'),
+  getAboutPage: () => api.get('/public/about'),
   getProducts: (params) => api.get('/public/products', { params }),
   getProduct: (id) => api.get(`/public/products/${id}`),
   getContactInfo: () => api.get('/public/contact-info'),
@@ -74,6 +75,13 @@ export const adminAPI = {
   post: (endpoint, data, config) => api.post(endpoint, data, config),
   put: (endpoint, data, config) => api.put(endpoint, data, config),
   delete: (endpoint) => api.delete(endpoint),
+  
+  // About Page Management
+  getAboutPages: () => api.get('/admin/about-pages'),
+  getAboutPage: (id) => api.get(`/admin/about-pages/${id}`),
+  createAboutPage: (data) => api.post('/admin/about-pages', data),
+  updateAboutPage: (id, data) => api.put(`/admin/about-pages/${id}`, data),
+  deleteAboutPage: (id) => api.delete(`/admin/about-pages/${id}`),
   
   // Media Library
   getMedia: () => api.get('/admin/media'),

@@ -58,6 +58,13 @@ const CategoryForm = ({ readOnly = false }) => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Check file size - 3MB limit (3 * 1024 * 1024 bytes)
+      const maxSize = 3 * 1024 * 1024; // 3MB in bytes
+      if (file.size > maxSize) {
+        toast.error('File size exceeds 3MB limit. Please select a smaller file.');
+        return;
+      }
+      
       // Create a preview URL for the image
       const imagePreview = URL.createObjectURL(file);
       
@@ -291,7 +298,7 @@ const CategoryForm = ({ readOnly = false }) => {
                         />
                       </label>
                       <p className="mt-1 text-xs text-gray-500">
-                        PNG, JPG, GIF up to 5MB
+                        PNG, JPG, GIF up to 3MB
                       </p>
                     </div>
                   )}

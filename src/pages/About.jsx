@@ -9,20 +9,35 @@ const About = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchCompanyInfo = async () => {
+    const fetchAboutPageContent = async () => {
       try {
-        const response = await publicAPI.getCompanyInfo();
+        const response = await publicAPI.getAboutPage();
         if (response.data.success) {
           setCompanyInfo(response.data.data);
+        } else {
+          // Fallback to company info if about page is not available
+          const companyResponse = await publicAPI.getCompanyInfo();
+          if (companyResponse.data.success) {
+            setCompanyInfo(companyResponse.data.data);
+          }
         }
       } catch (error) {
-        console.error('Error fetching company info:', error);
+        console.error('Error fetching about page content:', error);
+        // Fallback to company info if about page fetch fails
+        try {
+          const companyResponse = await publicAPI.getCompanyInfo();
+          if (companyResponse.data.success) {
+            setCompanyInfo(companyResponse.data.data);
+          }
+        } catch (companyError) {
+          console.error('Error fetching company info:', companyError);
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCompanyInfo();
+    fetchAboutPageContent();
   }, []);
 
   const values = [

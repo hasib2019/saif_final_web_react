@@ -107,6 +107,8 @@ export const LanguageProvider = ({ children }) => {
         'common.back': 'Back',
         'common.next': 'Next',
         'common.previous': 'Previous',
+        'common.additional_details': 'Additional Details',
+        'common.learn_more': 'Learn More',
         
         // Auth
         'auth.login': 'Login',
@@ -174,6 +176,8 @@ export const LanguageProvider = ({ children }) => {
         'common.back': 'رجوع',
         'common.next': 'التالي',
         'common.previous': 'السابق',
+        'common.additional_details': 'تفاصيل إضافية',
+        'common.learn_more': 'اعرف المزيد',
         
         // Auth
         'auth.login': 'تسجيل الدخول',

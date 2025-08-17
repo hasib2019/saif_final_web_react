@@ -32,6 +32,15 @@ const ProductForm = ({ readOnly = false }) => {
     if (files.length === 0) return;
 
     try {
+      // Check file size (3MB limit)
+      const maxSize = 3 * 1024 * 1024; // 3MB in bytes
+      const oversizedFiles = files.filter(file => file.size > maxSize);
+      
+      if (oversizedFiles.length > 0) {
+        toast.error('One or more videos exceed the 3MB size limit. Please select smaller videos.');
+        return;
+      }
+      
       // Store both the file objects and create preview URLs
       const videoFiles = files.map(file => ({
         file,
@@ -70,6 +79,13 @@ const ProductForm = ({ readOnly = false }) => {
   const handleCatalogUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Check file size (3MB limit)
+    const maxSize = 3 * 1024 * 1024; // 3MB in bytes
+    if (file.size > maxSize) {
+      toast.error('Catalog file exceeds 3MB limit. Please select a smaller file.');
+      return;
+    }
 
     setFormData(prev => ({
       ...prev,
@@ -174,6 +190,15 @@ const ProductForm = ({ readOnly = false }) => {
     if (files.length === 0) return;
 
     try {
+      // Check file size (3MB limit)
+      const maxSize = 3 * 1024 * 1024; // 3MB in bytes
+      const oversizedFiles = files.filter(file => file.size > maxSize);
+      
+      if (oversizedFiles.length > 0) {
+        toast.error('One or more images exceed the 3MB size limit. Please select smaller images.');
+        return;
+      }
+      
       // Store both the file objects and create preview URLs
       const imageFiles = files.map(file => ({
         file,
@@ -614,7 +639,7 @@ const ProductForm = ({ readOnly = false }) => {
             {Array.isArray(formData.images) && formData.images.map((image, index) => (
               <div key={index} className="relative group">
                 <img
-                  src={typeof image === 'string' ? `http://127.0.0.1:8000/storage/${image}` : image.preview}
+                  src={typeof image === 'string' ? `https://saif-app.creativeitbari.com/storage/${image}` : image.preview}
                   alt={`Product image ${index + 1}`}
                   className="h-32 w-full object-cover rounded-lg"
                 />
@@ -633,6 +658,7 @@ const ProductForm = ({ readOnly = false }) => {
               <div className="h-32 w-full border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
                 <label className="cursor-pointer text-center p-4">
                   <span className="block text-sm font-medium text-gray-700">Add Image</span>
+                  <span className="block text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 3MB</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -682,6 +708,7 @@ const ProductForm = ({ readOnly = false }) => {
               <div className="h-32 w-full border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
                 <label className="cursor-pointer text-center p-4">
                   <span className="block text-sm font-medium text-gray-700">Add Video</span>
+                  <span className="block text-xs text-gray-500 mt-1">Videos up to 3MB</span>
                   <input
                     type="file"
                     accept="video/*"
@@ -736,6 +763,9 @@ const ProductForm = ({ readOnly = false }) => {
                       <label htmlFor="catalog-upload" className="cursor-pointer">
                         <span className="mt-2 text-sm font-medium text-primary-600 hover:text-primary-500">
                           Upload a catalog file (PDF)
+                        </span>
+                        <span className="block text-xs text-gray-500 mt-1">
+                          PDF up to 3MB
                         </span>
                         <input
                           id="catalog-upload"

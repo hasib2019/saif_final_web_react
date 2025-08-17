@@ -98,6 +98,13 @@ const NewsForm = ({ readOnly = false }) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Check file size (3MB limit)
+    const maxSize = 3 * 1024 * 1024; // 3MB in bytes
+    if (file.size > maxSize) {
+      toast.error('Image size exceeds 3MB limit. Please select a smaller image.');
+      return;
+    }
+
     // Store the file object directly for form submission
     handleInputChange('featured_image', file);
     
@@ -440,6 +447,9 @@ const NewsForm = ({ readOnly = false }) => {
                             onChange={handleFileUpload}
                           />
                         </label>
+                        <p className="mt-1 text-xs text-gray-500">
+                          PNG, JPG, GIF up to 3MB
+                        </p>
                       </div>
                     )}
                   </div>

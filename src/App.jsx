@@ -34,6 +34,7 @@ import CategoryForm from './pages/admin/CategoryForm';
 import ProductForm from './pages/admin/ProductForm';
 import UserForm from './pages/admin/UserForm';
 import NewsForm from './pages/admin/NewsForm';
+import ContactSettings from './pages/admin/ContactSettings';
 
 function App() {
   return (
@@ -161,6 +162,11 @@ function App() {
                 <Route path="contact" element={
                   <ProtectedRoute requiredPermission="view-form-submissions">
                     <AdminContact />
+                  </ProtectedRoute>
+                } />
+                <Route path="contact/settings" element={
+                  <ProtectedRoute requiredPermission="manage-settings">
+                    <ContactSettings />
                   </ProtectedRoute>
                 } />
                 <Route path="users" element={

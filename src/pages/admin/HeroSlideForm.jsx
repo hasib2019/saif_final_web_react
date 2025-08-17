@@ -101,6 +101,13 @@ const HeroSlideForm = () => {
   const handleFileUpload = async (field, file) => {
     if (!file) return;
     
+    // Check file size - 3MB limit (3 * 1024 * 1024 bytes)
+    const maxSize = 3 * 1024 * 1024; // 3MB in bytes
+    if (file.size > maxSize) {
+      toast.error('File size exceeds 3MB limit. Please select a smaller file.');
+      return;
+    }
+    
     const formDataUpload = new FormData();
     formDataUpload.append('file', file);
     formDataUpload.append('type', 'image');
@@ -391,6 +398,9 @@ const HeroSlideForm = () => {
                           }}
                         />
                       </label>
+                      <p className="mt-1 text-xs text-gray-500">
+                        PNG, JPG, GIF up to 3MB
+                      </p>
                     </div>
                   </div>
 
@@ -419,6 +429,9 @@ const HeroSlideForm = () => {
                           }}
                         />
                       </label>
+                      <p className="mt-1 text-xs text-gray-500">
+                        PNG, JPG, GIF up to 3MB
+                      </p>
                     </div>
                   </div>
                 </div>

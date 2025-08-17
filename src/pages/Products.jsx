@@ -75,7 +75,7 @@ const Products = () => {
     <div className="card group hover:shadow-lg transition-shadow duration-300">
       <div className="relative overflow-hidden rounded-lg mb-4">
         <img
-            src={product.images && product.images.length > 0 ? `http://127.0.0.1:8000/storage/${product.images[0]}` : '/api/placeholder/400/300'}
+            src={product.images && product.images.length > 0 ? `https://saif-app.creativeitbari.com/storage/${product.images[0]}` : '/api/placeholder/400/300'}
             alt={getLocalized(product.name)}
             className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
           />
@@ -133,7 +133,7 @@ const Products = () => {
       <div className="md:w-1/3">
         <div className="relative overflow-hidden rounded-lg">
           <img
-            src={product.images && product.images.length > 0 ? `http://127.0.0.1:8000/storage/${product.images[0]}` : '/api/placeholder/400/300'}
+            src={product.images && product.images.length > 0 ? `https://saif-app.creativeitbari.com/storage/${product.images[0]}` : '/api/placeholder/400/300'}
             alt={getLocalized(product.name)}
             className="w-full h-48 md:h-32 object-cover"
           />

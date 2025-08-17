@@ -8,17 +8,34 @@ import {
   Image,
   Globe,
   Building,
+  Calendar,
+  Users,
+  Award,
+  Clock,
+  MapPin,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminAbout = () => {
   const [aboutData, setAboutData] = useState({
+    title: { en: '', ar: '', bn: '' },
+    subtitle: { en: '', ar: '', bn: '' },
+    content: { en: '', ar: '', bn: '' },
     mission: { en: '', ar: '', bn: '' },
     vision: { en: '', ar: '', bn: '' },
     values: { en: '', ar: '', bn: '' },
     history: { en: '', ar: '', bn: '' },
     team_description: { en: '', ar: '', bn: '' },
-    company_overview: { en: '', ar: '', bn: '' }
+    about_image: '',
+    team_image: '',
+    office_images: [],
+    founded_year: '',
+    employees_count: '',
+    countries_served: '',
+    projects_completed: '',
+    achievements: [],
+    timeline: [],
+    is_active: true
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,9 +48,31 @@ const AdminAbout = () => {
 
   const fetchAboutData = async () => {
     try {
-      const response = await adminAPI.getCompanyInfo();
-      if (response.data.data) {
-        setAboutData(response.data.data);
+      // Get the list of about pages
+      const response = await adminAPI.getAboutPages();
+      if (response.data.success && response.data.data.length > 0) {
+        // Find the active about page or use the first one
+        const activePage = response.data.data.find(page => page.is_active) || response.data.data[0];
+        // Get the specific about page details
+        const pageResponse = await adminAPI.getAboutPage(activePage.id);
+        if (pageResponse.data.success) {
+          setAboutData(pageResponse.data.data);
+        }
+      } else {
+        // Fallback to company info if no about pages exist
+        const companyResponse = await adminAPI.getCompanyInfo();
+        if (companyResponse.data.data) {
+          // Map company info to about page structure
+          const companyData = companyResponse.data.data;
+          setAboutData(prev => ({
+            ...prev,
+            mission: companyData.mission || { en: '', ar: '', bn: '' },
+            vision: companyData.vision || { en: '', ar: '', bn: '' },
+            values: companyData.values || { en: '', ar: '', bn: '' },
+            history: companyData.history || { en: '', ar: '', bn: '' },
+            content: companyData.about_us || { en: '', ar: '', bn: '' }
+          }));
+        }
       }
     } catch (error) {
       console.error('Error fetching about data:', error);
@@ -46,8 +85,13 @@ const AdminAbout = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await adminAPI.updateCompanyInfo(aboutData);
-      toast.success('About content updated successfully');
+      // Check if we're updating an existing page or creating a new one
+      if (aboutData.id) {
+        await adminAPI.updateAboutPage(aboutData.id, aboutData);
+      } else {
+        await adminAPI.createAboutPage(aboutData);
+      }
+      toast.success('About page content updated successfully');
     } catch (error) {
       console.error('Error saving about data:', error);
       toast.error('Failed to save about content');
@@ -74,40 +118,60 @@ const AdminAbout = () => {
 
   const sections = [
     {
-      key: 'company_overview',
+      key: 'title',
+      title: 'Page Title',
+      icon: FileText,
+      description: 'Main title for the about page',
+      type: 'text'
+    },
+    {
+      key: 'subtitle',
+      title: 'Page Subtitle',
+      icon: FileText,
+      description: 'Subtitle or tagline for the about page',
+      type: 'text'
+    },
+    {
+      key: 'content',
       title: 'Company Overview',
       icon: Building,
-      description: 'General company description and overview'
+      description: 'General company description and overview',
+      type: 'textarea'
     },
     {
       key: 'mission',
       title: 'Mission Statement',
       icon: FileText,
-      description: 'Company mission and purpose'
+      description: 'Company mission and purpose',
+      type: 'textarea'
     },
     {
       key: 'vision',
       title: 'Vision Statement',
       icon: Globe,
-      description: 'Company vision and future goals'
+      description: 'Company vision and future goals',
+      type: 'textarea'
     },
     {
       key: 'values',
       title: 'Core Values',
-      icon: FileText,
-      description: 'Company values and principles'
+      icon: Award,
+      description: 'Company values and principles',
+      type: 'textarea'
     },
     {
       key: 'history',
       title: 'Company History',
-      icon: FileText,
-      description: 'Company background and history'
+      icon: Clock,
+      description: 'Company background and history',
+      type: 'textarea'
     },
     {
       key: 'team_description',
       title: 'Team Description',
-      icon: FileText,
-      description: 'About the team and leadership'
+      icon: Users,
+      description: 'About the team and leadership',
+      type: 'textarea'
     }
   ];
 
@@ -174,30 +238,177 @@ const AdminAbout = () => {
 
         {/* Content Sections */}
         <div className="p-6 space-y-8">
-          {sections.map((section) => (
-            <div key={section.key} className="border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center mb-4">
-                <section.icon className="h-5 w-5 text-primary-600 mr-2" />
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900">{section.title}</h3>
-                  <p className="text-sm text-gray-500">{section.description}</p>
+          {/* Translatable Content */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium text-gray-900">Translatable Content</h3>
+            {sections.map((section) => (
+              <div key={section.key} className="border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center mb-4">
+                  <section.icon className="h-5 w-5 text-primary-600 mr-2" />
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">{section.title}</h3>
+                    <p className="text-sm text-gray-500">{section.description}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <label className="block text-sm font-medium text-gray-700">
+                    {section.title} ({tabs.find(t => t.id === activeTab)?.name})
+                  </label>
+                  {section.type === 'textarea' ? (
+                    <textarea
+                      value={aboutData[section.key]?.[activeTab] || ''}
+                      onChange={(e) => handleInputChange(section.key, activeTab, e.target.value)}
+                      rows={section.key === 'content' || section.key === 'history' ? 8 : 4}
+                      className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                      placeholder={`Enter ${section.title.toLowerCase()} in ${tabs.find(t => t.id === activeTab)?.name}...`}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={aboutData[section.key]?.[activeTab] || ''}
+                      onChange={(e) => handleInputChange(section.key, activeTab, e.target.value)}
+                      className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                      placeholder={`Enter ${section.title.toLowerCase()} in ${tabs.find(t => t.id === activeTab)?.name}...`}
+                    />
+                  )}
                 </div>
               </div>
-              
-              <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  {section.title} ({tabs.find(t => t.id === activeTab)?.name})
-                </label>
-                <textarea
-                  value={aboutData[section.key]?.[activeTab] || ''}
-                  onChange={(e) => handleInputChange(section.key, activeTab, e.target.value)}
-                  rows={section.key === 'company_overview' || section.key === 'history' ? 8 : 4}
+            ))}
+          </div>
+          
+          {/* Non-Translatable Content */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium text-gray-900">Images & Media</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center mb-4">
+                  <Image className="h-5 w-5 text-primary-600 mr-2" />
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">About Image</h3>
+                    <p className="text-sm text-gray-500">Main image for the about page</p>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  value={aboutData.about_image || ''}
+                  onChange={(e) => setAboutData({...aboutData, about_image: e.target.value})}
                   className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  placeholder={`Enter ${section.title.toLowerCase()} in ${tabs.find(t => t.id === activeTab)?.name}...`}
+                  placeholder="Enter image URL or path..."
+                />
+              </div>
+              
+              <div className="border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center mb-4">
+                  <Image className="h-5 w-5 text-primary-600 mr-2" />
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Team Image</h3>
+                    <p className="text-sm text-gray-500">Image of the team or leadership</p>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  value={aboutData.team_image || ''}
+                  onChange={(e) => setAboutData({...aboutData, team_image: e.target.value})}
+                  className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Enter image URL or path..."
                 />
               </div>
             </div>
-          ))}
+          </div>
+          
+          {/* Company Statistics */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-medium text-gray-900">Company Statistics</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center mb-4">
+                  <Calendar className="h-5 w-5 text-primary-600 mr-2" />
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Founded Year</h3>
+                  </div>
+                </div>
+                <input
+                  type="number"
+                  value={aboutData.founded_year || ''}
+                  onChange={(e) => setAboutData({...aboutData, founded_year: e.target.value})}
+                  className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Enter founding year..."
+                />
+              </div>
+              
+              <div className="border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center mb-4">
+                  <Users className="h-5 w-5 text-primary-600 mr-2" />
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Employees Count</h3>
+                  </div>
+                </div>
+                <input
+                  type="number"
+                  value={aboutData.employees_count || ''}
+                  onChange={(e) => setAboutData({...aboutData, employees_count: e.target.value})}
+                  className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Enter number of employees..."
+                />
+              </div>
+              
+              <div className="border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center mb-4">
+                  <MapPin className="h-5 w-5 text-primary-600 mr-2" />
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Countries Served</h3>
+                  </div>
+                </div>
+                <input
+                  type="number"
+                  value={aboutData.countries_served || ''}
+                  onChange={(e) => setAboutData({...aboutData, countries_served: e.target.value})}
+                  className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Enter number of countries..."
+                />
+              </div>
+              
+              <div className="border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center mb-4">
+                  <Award className="h-5 w-5 text-primary-600 mr-2" />
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Projects Completed</h3>
+                  </div>
+                </div>
+                <input
+                  type="number"
+                  value={aboutData.projects_completed || ''}
+                  onChange={(e) => setAboutData({...aboutData, projects_completed: e.target.value})}
+                  className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Enter number of projects..."
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Page Status */}
+          <div className="border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center mb-4">
+              <Globe className="h-5 w-5 text-primary-600 mr-2" />
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">Page Status</h3>
+                <p className="text-sm text-gray-500">Control whether this page is active and visible to users</p>
+              </div>
+            </div>
+            <div className="flex items-center">
+              <input
+                id="is_active"
+                type="checkbox"
+                checked={aboutData.is_active}
+                onChange={(e) => setAboutData({...aboutData, is_active: e.target.checked})}
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+              />
+              <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
+                Active (visible to users)
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 

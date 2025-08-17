@@ -14,6 +14,8 @@ const Home = () => {
   const [partners, setPartners] = useState([]);
   const [heroSlides, setHeroSlides] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedSlide, setSelectedSlide] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const loadHomeData = async () => {
@@ -158,13 +160,16 @@ const Home = () => {
                       )}
                       {getLocalized(slide.button_text) && (
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                          <Link
-                            to={slide.button_link || '#'}
+                          <button
+                            onClick={() => {
+                              setSelectedSlide(slide);
+                              setShowModal(true);
+                            }}
                             className="inline-flex items-center px-8 py-3 bg-white hover:bg-gray-100 text-primary-700 font-semibold rounded-lg transition-colors duration-200 shadow-md"
                           >
                             {getLocalized(slide.button_text)}
                             <ArrowRight className={`w-5 h-5 ${isRTL ? 'mr-2' : 'ml-2'}`} />
-                          </Link>
+                          </button>
                         </div>
                       )}
                     </div>
@@ -208,6 +213,80 @@ const Home = () => {
         )}
       </section>
 
+      {/* Slide Detail Modal */}
+      {showModal && selectedSlide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-70">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-800">{getLocalized(selectedSlide.title)}</h2>
+              <button 
+                onClick={() => setShowModal(false)}
+                className="text-gray-500 hover:text-gray-700 focus:outline-none"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-6">
+              {/* Image */}
+              <div className="mb-6">
+                <img 
+                  src={selectedSlide.image || selectedSlide.background_image} 
+                  alt={getLocalized(selectedSlide.title)}
+                  className="w-full h-auto rounded-lg object-cover max-h-[400px]"
+                />
+              </div>
+              
+              {/* Content */}
+              <div className="space-y-4">
+                {getLocalized(selectedSlide.subtitle) && (
+                  <h3 className="text-xl font-semibold text-gray-700">{getLocalized(selectedSlide.subtitle)}</h3>
+                )}
+                
+                {getLocalized(selectedSlide.description) && (
+                  <div className="text-gray-600 prose max-w-none" 
+                    dangerouslySetInnerHTML={{ __html: getLocalized(selectedSlide.description) }} 
+                  />
+                )}
+                
+                {/* Additional Details */}
+                {selectedSlide.additional_details && (
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <h4 className="text-lg font-semibold mb-4">{t('common.additional_details')}</h4>
+                    <div className="text-gray-600 prose max-w-none" 
+                      dangerouslySetInnerHTML={{ __html: getLocalized(selectedSlide.additional_details) }} 
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-200 flex justify-end">
+              {selectedSlide.button_link && (
+                <Link
+                  to={selectedSlide.button_link}
+                  className="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors duration-200 mr-4"
+                >
+                  {t('common.learn_more')}
+                  <ArrowRight className={`w-4 h-4 ${isRTL ? 'mr-2' : 'ml-2'}`} />
+                </Link>
+              )}
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200"
+              >
+                {t('common.close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* About Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
